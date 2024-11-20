@@ -13,10 +13,10 @@ import { Card } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { 
   AnalysisData, 
-  OverviewData, 
-  CooccurrenceItem, 
-  VolumeItem, 
-  CompetitorItem 
+  AnalysisDetail,
+  Cooccurrence, 
+  SearchVolume, 
+  Competitor 
 } from "@/types/analysis"
 
 interface AnalysisResultsProps {
@@ -81,7 +81,6 @@ export function AnalysisResults({ analysisId, type }: AnalysisResultsProps) {
           <TableRow>
             <TableHead>共现关键词</TableHead>
             <TableHead className="text-right">共现次数</TableHead>
-            <TableHead>创建时间</TableHead>
           </TableRow>
         )
       case "volume":
@@ -110,7 +109,7 @@ export function AnalysisResults({ analysisId, type }: AnalysisResultsProps) {
   const renderTableBody = () => {
     switch (type) {
       case "overview":
-        const overviewData = data as OverviewData
+        const overviewData = data as AnalysisDetail
         return (
           <TableRow>
             <TableCell>{overviewData.seed_keyword}</TableCell>
@@ -120,16 +119,15 @@ export function AnalysisResults({ analysisId, type }: AnalysisResultsProps) {
           </TableRow>
         )
       case "cooccurrence":
-        const cooccurrenceData = data as CooccurrenceItem[]
+        const cooccurrenceData = data as Cooccurrence[]
         return cooccurrenceData.map((item) => (
           <TableRow key={item.id}>
             <TableCell>{item.keyword}</TableCell>
             <TableCell className="text-right">{item.cooccurrence_count.toLocaleString()}</TableCell>
-            <TableCell>{new Date(item.created_at).toLocaleString()}</TableCell>
           </TableRow>
         ))
       case "volume":
-        const volumeData = data as VolumeItem[]
+        const volumeData = data as SearchVolume[]
         return volumeData.map((item) => (
           <TableRow key={item.id}>
             <TableCell>{item.mediator_keyword}</TableCell>
@@ -140,7 +138,7 @@ export function AnalysisResults({ analysisId, type }: AnalysisResultsProps) {
           </TableRow>
         ))
       case "competitors":
-        const competitorData = data as CompetitorItem[]
+        const competitorData = data as Competitor[]
         return competitorData.map((item) => (
           <TableRow key={item.id}>
             <TableCell>{item.competitor_keyword}</TableCell>
