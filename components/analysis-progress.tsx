@@ -41,32 +41,44 @@ const stageNames = {
 
 export function AnalysisProgress({ 
   analysisId, 
-  onWsReady 
+  onWsReady,
+  onComplete  // 添加完成回调
 }: { 
   analysisId: number
   onWsReady?: () => void
+  onComplete?: () => void
 }) {
   const [progress, setProgress] = useState<WebSocketMessage | null>(null)
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectAttemptsRef = useRef(0)
-  const lastHeartbeatRef = useRef(Date.now())
-  const heartbeatCheckIntervalRef = useRef<NodeJS.Timeout>()
   const analysisCompletedRef = useRef(false)
 
   const MAX_RECONNECT_ATTEMPTS = 5
-  const HEARTBEAT_TIMEOUT = 35000
   const RECONNECT_DELAY = 3000
 
+  // 添加dispatchStatusEvent函数定义
+  const dispatchStatusEvent = (type: string, data: Record<string, unknown> = {}) => {
+    const event = new CustomEvent('websocket-status', {
+      detail: { type, data }
+    })
+    window.dispatchEvent(event)
+  }
+
   useEffect(() => {
-    // 先检查分析状态
+    let isSubscribed = true  // 添加订阅标志
+
     const checkAnalysisStatus = async () => {
       try {
         const response = await fetch(`http://localhost:8000/api/v1/keyword/analysis/${analysisId}`)
         if (!response.ok) throw new Error("获取分析状态失败")
         const data = await response.json()
         
+        // 如果已经取消订阅，不继续处理
+        if (!isSubscribed) return
+
         // 如果分析已完成或失败，直接显示结果，不建立WebSocket连接
         if (data.status === "completed" || data.status === "failed") {
+          analysisCompletedRef.current = true
           setProgress({
             type: "progress",
             stage: data.status === "completed" ? "completed" : "error",
@@ -78,65 +90,64 @@ export function AnalysisProgress({
               error: data.error_message
             }
           })
-          return false // 不需要建立WebSocket连接
+          return
         }
-        return true // 需要建立WebSocket连接
+
+        // 只有在非完成状态时才建立WebSocket连接
+        connectWebSocket(data.status)
       } catch (error) {
         console.error('检查分析状态失败:', error)
-        return true // 出错时仍尝试建立WebSocket连接
+        if (isSubscribed) {
+          connectWebSocket("unknown")
+        }
       }
     }
 
-    const dispatchStatusEvent = (type: string, data: Record<string, unknown> = {}) => {
-      const event = new CustomEvent('websocket-status', {
-        detail: { type, data }
-      })
-      window.dispatchEvent(event)
-    }
-
-    const connectWebSocket = () => {
+    const connectWebSocket = (currentStatus: string) => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.close()
       }
 
-      console.log(`正在连接WebSocket: analysisId=${analysisId}`)
+      console.log(`正在连接WebSocket: analysisId=${analysisId}, status=${currentStatus}`)
       const ws = new WebSocket(`ws://localhost:8000/api/v1/keyword/ws/analysis/${analysisId}`)
       wsRef.current = ws
 
       ws.onopen = () => {
         console.log('WebSocket连接已建立')
         reconnectAttemptsRef.current = 0
-        lastHeartbeatRef.current = Date.now()
         dispatchStatusEvent('connect')
-        setProgress({
-          type: "progress",
-          stage: "initializing",
-          percent: 0,
-          message: "正在建立连接...",
-          details: {}
-        })
-        onWsReady?.()
+
+        // 只在pending状态时通知准备就绪
+        if (currentStatus === "pending") {
+          console.log('状态为pending，通知准备就绪')
+          onWsReady?.()
+        } else {
+          console.log(`当前状态为${currentStatus}，不触发准备就绪`)
+        }
       }
 
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data) as WebSocketMessage
-        console.log('收到消息:', data)
-
-        if (data.type === 'heartbeat') {
-          lastHeartbeatRef.current = Date.now()
-          dispatchStatusEvent('heartbeat')
-          return
-        }
+        console.log('收到WebSocket消息:', data)
 
         if (data.type === 'progress') {
           setProgress(data)
           dispatchStatusEvent('message')
           
+          // 如果收到完成消息，触发回调并关闭连接
           if (data.stage === 'completed' || data.stage === 'error') {
-            analysisCompletedRef.current = true
-            if (wsRef.current) {
-              wsRef.current.close()
+            // 防止重复处理完成状态
+            if (!analysisCompletedRef.current) {
+              analysisCompletedRef.current = true
+              console.log('分析已完成，准备触发完成回调和关闭连接')
+              if (data.stage === 'completed') {
+                console.log('触发完成回调')
+                onComplete?.()
+              }
+              console.log('关闭WebSocket连接')
+              ws.close(1000)
             }
+            return
           }
         }
       }
@@ -157,7 +168,8 @@ export function AnalysisProgress({
         console.log('WebSocket连接关闭:', event.code)
         dispatchStatusEvent('disconnect')
         
-        if (!analysisCompletedRef.current && reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
+        // 只在非正常关闭且未完成时尝试重连
+        if (!analysisCompletedRef.current && event.code !== 1000 && reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
           reconnectAttemptsRef.current++
           dispatchStatusEvent('reconnect', { attempts: reconnectAttemptsRef.current })
           console.log(`尝试重连 (${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS})...`)
@@ -173,33 +185,17 @@ export function AnalysisProgress({
       }
     }
 
-    const startHeartbeatCheck = () => {
-      heartbeatCheckIntervalRef.current = setInterval(() => {
-        const timeSinceLastHeartbeat = Date.now() - lastHeartbeatRef.current
-        if (timeSinceLastHeartbeat > HEARTBEAT_TIMEOUT) {
-          console.log('心跳超时，重新连接...')
-          wsRef.current?.close()
-        }
-      }, 5000)
-    }
+    // 启动初始状态检查
+    checkAnalysisStatus()
 
-    // 先检查状态，再决定是否建立WebSocket连接
-    checkAnalysisStatus().then(shouldConnect => {
-      if (shouldConnect) {
-        connectWebSocket()
-        startHeartbeatCheck()
-      }
-    })
-
+    // 清理函数
     return () => {
-      if (heartbeatCheckIntervalRef.current) {
-        clearInterval(heartbeatCheckIntervalRef.current)
-      }
+      isSubscribed = false
       if (wsRef.current) {
         wsRef.current.close()
       }
     }
-  }, [analysisId])
+  }, [analysisId, onWsReady, onComplete])
 
   // 如果没有进度信息，显示加载状态
   if (!progress) {

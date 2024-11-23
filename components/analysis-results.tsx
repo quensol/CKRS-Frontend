@@ -22,15 +22,17 @@ import {
 interface AnalysisResultsProps {
   analysisId: number
   type: "overview" | "cooccurrence" | "volume" | "competitors"
+  key?: number
 }
 
-export function AnalysisResults({ analysisId, type }: AnalysisResultsProps) {
+export function AnalysisResults({ analysisId, type, key }: AnalysisResultsProps) {
   const [data, setData] = useState<AnalysisData | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        console.log(`开始获取${type}数据, analysisId=${analysisId}${key ? `, key=${key}` : ''}`)
         let endpoint = `http://localhost:8000/api/v1/keyword/`
         switch (type) {
           case "overview":
@@ -50,8 +52,10 @@ export function AnalysisResults({ analysisId, type }: AnalysisResultsProps) {
         const response = await fetch(endpoint)
         if (!response.ok) throw new Error("获取数据失败")
         const result = await response.json()
+        console.log(`${type}数据获取成功:`, result)
         setData(result)
       } catch (error) {
+        console.error(`${type}数据获取失败:`, error)
         toast({
           title: "数据加载失败",
           description: error instanceof Error ? error.message : "未知错误",
@@ -61,7 +65,7 @@ export function AnalysisResults({ analysisId, type }: AnalysisResultsProps) {
     }
 
     fetchData()
-  }, [analysisId, type, toast])
+  }, [analysisId, type, toast, key])
 
   if (!data) return <div>加载中...</div>
 

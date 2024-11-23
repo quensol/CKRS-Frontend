@@ -18,8 +18,11 @@ export function KeywordAnalyzer({ onAnalysisIdChange }: KeywordAnalyzerProps) {
   const [keyword, setKeyword] = useState("")
   const [analysisId, setAnalysisId] = useState<number | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [resultKey, setResultKey] = useState(0)
   const { toast } = useToast()
   const wsReadyRef = useRef(false)
+  const analysisStatusRef = useRef<string>("pending")
+  const completedRef = useRef(false)
 
   const updateAnalysisId = (id: number | null) => {
     setAnalysisId(id)
@@ -30,7 +33,7 @@ export function KeywordAnalyzer({ onAnalysisIdChange }: KeywordAnalyzerProps) {
     wsReadyRef.current = true
     console.log('WebSocket已就绪，准备启动分析...')
     
-    if (id && wsReadyRef.current) {
+    if (id && wsReadyRef.current && analysisStatusRef.current === "pending") {
       try {
         const startResponse = await fetch(
           `http://localhost:8000/api/v1/keyword/start-analysis/${id}`,
@@ -56,6 +59,7 @@ export function KeywordAnalyzer({ onAnalysisIdChange }: KeywordAnalyzerProps) {
   }
 
   const startNewAnalysis = async () => {
+    completedRef.current = false
     if (!keyword.trim()) {
       toast({
         title: "请输入关键词",
@@ -85,8 +89,10 @@ export function KeywordAnalyzer({ onAnalysisIdChange }: KeywordAnalyzerProps) {
       const data = await response.json() as AnalysisBrief
       console.log('分析任务状态:', data)
 
+      analysisStatusRef.current = data.status
+      updateAnalysisId(data.id)
+
       if (data.status === "completed") {
-        updateAnalysisId(data.id)
         toast({
           title: "分析完成",
           description: "已找到该关键词的历史分析结果",
@@ -99,9 +105,6 @@ export function KeywordAnalyzer({ onAnalysisIdChange }: KeywordAnalyzerProps) {
           variant: "destructive",
         })
       }
-      else {
-        updateAnalysisId(data.id)
-      }
     } catch (error) {
       console.error('创建分析任务失败:', error)
       toast({
@@ -113,6 +116,26 @@ export function KeywordAnalyzer({ onAnalysisIdChange }: KeywordAnalyzerProps) {
     } finally {
       setIsAnalyzing(false)
     }
+  }
+
+  const handleAnalysisComplete = () => {
+    if (completedRef.current) {
+      console.log('已经处理过完成回调，跳过')
+      return
+    }
+    
+    console.log('收到分析完成通知，等待数据写入...')
+    completedRef.current = true
+    
+    // 添加1秒延迟，等待数据库写入完成
+    setTimeout(() => {
+      console.log('开始更新resultKey触发重新获取数据')
+      setResultKey(prev => {
+        const newKey = prev + 1
+        console.log(`resultKey更新: ${prev} -> ${newKey}`)
+        return newKey
+      })
+    }, 1000)  // 延迟1秒
   }
 
   return (
@@ -141,6 +164,7 @@ export function KeywordAnalyzer({ onAnalysisIdChange }: KeywordAnalyzerProps) {
           <AnalysisProgress 
             analysisId={analysisId} 
             onWsReady={() => handleWsReady(analysisId)}
+            onComplete={handleAnalysisComplete}
           />
           <Tabs defaultValue="overview" className="w-full">
             <TabsList>
@@ -150,7 +174,11 @@ export function KeywordAnalyzer({ onAnalysisIdChange }: KeywordAnalyzerProps) {
               <TabsTrigger value="competitors">竞争词</TabsTrigger>
             </TabsList>
             <TabsContent value="overview">
-              <AnalysisResults analysisId={analysisId} type="overview" />
+              <AnalysisResults 
+                key={resultKey}
+                analysisId={analysisId} 
+                type="overview" 
+              />
             </TabsContent>
             <TabsContent value="cooccurrence">
               <AnalysisResults analysisId={analysisId} type="cooccurrence" />
