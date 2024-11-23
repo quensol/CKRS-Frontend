@@ -18,6 +18,10 @@ import {
   SearchVolume, 
   Competitor 
 } from "@/types/analysis"
+import { OverviewChart } from './charts/overview-chart'
+import { CooccurrenceChart } from './charts/cooccurrence-chart'
+import { VolumeChart } from './charts/volume-chart'
+import { CompetitorChart } from './charts/competitor-chart'
 
 interface AnalysisResultsProps {
   analysisId: number
@@ -93,7 +97,7 @@ export function AnalysisResults({ analysisId, type, key }: AnalysisResultsProps)
             <TableHead>中介关键词</TableHead>
             <TableHead className="text-right">共现搜索量</TableHead>
             <TableHead className="text-right">中介词总搜索量</TableHead>
-            <TableHead className="text-right">共现比例(%)</TableHead>
+            <TableHead className="text-right">共比例(%)</TableHead>
             <TableHead className="text-right">权重</TableHead>
           </TableRow>
         )
@@ -155,16 +159,71 @@ export function AnalysisResults({ analysisId, type, key }: AnalysisResultsProps)
     }
   }
 
+  const renderContent = () => {
+    switch (type) {
+      case "overview":
+        const overviewData = data as AnalysisDetail
+        return (
+          <div>
+            <OverviewChart data={overviewData} />
+            <Table>
+              <TableHeader>
+                {renderTableHeader()}
+              </TableHeader>
+              <TableBody>
+                {renderTableBody()}
+              </TableBody>
+            </Table>
+          </div>
+        )
+      case "cooccurrence":
+        return (
+          <div>
+            <CooccurrenceChart data={data as Cooccurrence[]} />
+            <Table>
+              <TableHeader>
+                {renderTableHeader()}
+              </TableHeader>
+              <TableBody>
+                {renderTableBody()}
+              </TableBody>
+            </Table>
+          </div>
+        )
+      case "volume":
+        return (
+          <div>
+            <VolumeChart data={data as SearchVolume[]} />
+            <Table>
+              <TableHeader>
+                {renderTableHeader()}
+              </TableHeader>
+              <TableBody>
+                {renderTableBody()}
+              </TableBody>
+            </Table>
+          </div>
+        )
+      case "competitors":
+        return (
+          <div>
+            <CompetitorChart data={data as Competitor[]} />
+            <Table>
+              <TableHeader>
+                {renderTableHeader()}
+              </TableHeader>
+              <TableBody>
+                {renderTableBody()}
+              </TableBody>
+            </Table>
+          </div>
+        )
+    }
+  }
+
   return (
     <Card className="p-6">
-      <Table>
-        <TableHeader>
-          {renderTableHeader()}
-        </TableHeader>
-        <TableBody>
-          {renderTableBody()}
-        </TableBody>
-      </Table>
+      {renderContent()}
     </Card>
   )
 } 
