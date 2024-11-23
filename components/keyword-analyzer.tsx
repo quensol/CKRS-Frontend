@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
@@ -13,9 +13,13 @@ import { AnalysisBrief } from "@/types/analysis"
 
 interface KeywordAnalyzerProps {
   onAnalysisIdChange?: (id: number | null) => void
+  selectedAnalysisId?: number | null
 }
 
-export function KeywordAnalyzer({ onAnalysisIdChange }: KeywordAnalyzerProps) {
+export function KeywordAnalyzer({ 
+  onAnalysisIdChange,
+  selectedAnalysisId 
+}: KeywordAnalyzerProps) {
   const [keyword, setKeyword] = useState("")
   const [analysisId, setAnalysisId] = useState<number | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -24,6 +28,12 @@ export function KeywordAnalyzer({ onAnalysisIdChange }: KeywordAnalyzerProps) {
   const wsReadyRef = useRef(false)
   const analysisStatusRef = useRef<string>("pending")
   const completedRef = useRef(false)
+
+  useEffect(() => {
+    if (selectedAnalysisId && selectedAnalysisId !== analysisId) {
+      updateAnalysisId(selectedAnalysisId)
+    }
+  }, [selectedAnalysisId])
 
   const updateAnalysisId = (id: number | null) => {
     setAnalysisId(id)
