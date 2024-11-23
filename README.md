@@ -1,36 +1,117 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 关键词分析工具
 
-## Getting Started
+这是一个基于Next.js开发的关键词分析工具，用于分析搜索关键词的共现词、搜索量和竞争关系。
 
-First, run the development server:
+## 功能特点
 
+- 🔍 关键词共现分析
+- 📊 搜索量统计
+- 🎯 竞争关键词发现
+- 📈 可视化图表展示
+- 📱 响应式设计
+- 🔄 实时进度反馈
+
+## 系统要求
+
+- Node.js 18.0.0 或更高版本
+- npm 9.0.0 或更高版本
+
+## 安装步骤
+
+1. 克隆项目
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone [仓库地址]
+cd my-app
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. 安装依赖
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. 启动开发服务器
+```bash
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+应用将在 http://localhost:7242 启动
 
-## Learn More
+## 项目配置
 
-To learn more about Next.js, take a look at the following resources:
+### 环境变量
+如果需要修改后端API地址，请在项目根目录创建`.env.local`文件：
+```
+NEXT_PUBLIC_API_URL=http://your-api-url
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 端口配置
+默认端口为7242，如需修改，可以：
+1. 修改`package.json`中的`dev`脚本
+2. 或者使用命令行参数：`npm run dev -- -p [端口号]`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 使用说明
 
-## Deploy on Vercel
+1. **关键词分析**
+   - 在主页输入框中输入要分析的关键词
+   - 点击"开始分析"按钮
+   - 等待分析完成
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2. **查看分析结果**
+   - 概览：显示基本统计信息
+   - 共现词：展示相关联的关键词
+   - 搜索量：展示搜索量分布
+   - 竞争词：展示潜在的竞争关键词
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+3. **历史记录**
+   - 点击左上角菜单按钮打开历史记录
+   - 可以搜索历史分析记录
+   - 点击记录可以查看详细分析结果
+
+## 技术栈
+
+- Next.js 14
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+- Recharts
+
+## 开发说明
+
+### 目录结构
+```
+my-app/
+├── app/              # Next.js 应用目录
+├── components/       # React 组件
+├── hooks/           # 自定义 Hooks
+├── types/           # TypeScript 类型定义
+└── public/          # 静态资源
+```
+
+### 调试
+项目配置了VS Code调试设置，可以：
+1. 打开VS Code调试面板
+2. 选择"启动前端开发服务器"
+3. 按F5开始调试
+
+## 注意事项
+
+1. 确保后端API服务已启动
+2. WebSocket连接用于实时进度反馈
+3. 大量数据分析可能需要较长时间
+4. 建议使用Chrome或Firefox浏览器
+
+## 常见问题
+
+1. **启动失败**
+   - 检查Node.js版本
+   - 确认端口7242未被占用
+   - 检查依赖是否完整安装
+
+2. **分析卡住**
+   - 检查网络连接
+   - 查看WebSocket状态
+   - 刷新页面重试
+
+## 许可证
+
+MIT License

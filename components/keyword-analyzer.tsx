@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
@@ -29,16 +29,16 @@ export function KeywordAnalyzer({
   const analysisStatusRef = useRef<string>("pending")
   const completedRef = useRef(false)
 
+  const updateAnalysisId = useCallback((id: number | null) => {
+    setAnalysisId(id)
+    onAnalysisIdChange?.(id)
+  }, [onAnalysisIdChange])
+
   useEffect(() => {
     if (selectedAnalysisId && selectedAnalysisId !== analysisId) {
       updateAnalysisId(selectedAnalysisId)
     }
-  }, [selectedAnalysisId])
-
-  const updateAnalysisId = (id: number | null) => {
-    setAnalysisId(id)
-    onAnalysisIdChange?.(id)
-  }
+  }, [selectedAnalysisId, analysisId, updateAnalysisId])
 
   const handleWsReady = async (id: number) => {
     wsReadyRef.current = true
