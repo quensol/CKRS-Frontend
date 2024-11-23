@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { AnalysisProgress } from "./analysis-progress"
 import { AnalysisResults } from "./analysis-results"
+import { WebSocketStatus } from "./websocket-status"
 import { AnalysisBrief } from "@/types/analysis"
 
 interface KeywordAnalyzerProps {
@@ -46,7 +47,7 @@ export function KeywordAnalyzer({ onAnalysisIdChange }: KeywordAnalyzerProps) {
           throw new Error("启动分析失败")
         }
 
-        console.log('分析任务已启动')
+        console.log('分任务已启动')
       } catch (error) {
         console.error('启动分析失败:', error)
         toast({
@@ -139,57 +140,75 @@ export function KeywordAnalyzer({ onAnalysisIdChange }: KeywordAnalyzerProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="p-6">
-        <div className="flex gap-4">
-          <Input
-            placeholder="请输入要分析的关键词"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            disabled={isAnalyzing}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !isAnalyzing) {
-                startNewAnalysis()
-              }
-            }}
-          />
-          <Button onClick={startNewAnalysis} disabled={isAnalyzing}>
-            {isAnalyzing ? "分析中..." : "开始分析"}
-          </Button>
+    <div className="space-y-8">
+      <Card className="p-6 shadow-md hover:shadow-lg transition-shadow">
+        <div className="flex flex-col gap-4">
+          <h2 className="text-xl font-semibold">关键词分析</h2>
+          <div className="flex gap-4">
+            <Input
+              placeholder="请输入要分析的关键词"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              disabled={isAnalyzing}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !isAnalyzing) {
+                  startNewAnalysis()
+                }
+              }}
+              className="flex-1"
+            />
+            <Button 
+              onClick={startNewAnalysis} 
+              disabled={isAnalyzing}
+              className="min-w-[100px]"
+            >
+              {isAnalyzing ? "分析中..." : "开始分析"}
+            </Button>
+          </div>
         </div>
       </Card>
 
       {analysisId && (
         <>
-          <AnalysisProgress 
-            analysisId={analysisId} 
-            onWsReady={() => handleWsReady(analysisId)}
-            onComplete={handleAnalysisComplete}
-          />
-          <Tabs defaultValue="overview" className="w-full">
-            <TabsList>
-              <TabsTrigger value="overview">概览</TabsTrigger>
-              <TabsTrigger value="cooccurrence">共现词</TabsTrigger>
-              <TabsTrigger value="volume">搜索量</TabsTrigger>
-              <TabsTrigger value="competitors">竞争词</TabsTrigger>
-            </TabsList>
-            <TabsContent value="overview">
-              <AnalysisResults 
-                key={resultKey}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="md:col-span-2">
+              <AnalysisProgress 
                 analysisId={analysisId} 
-                type="overview" 
+                onWsReady={() => handleWsReady(analysisId)}
+                onComplete={handleAnalysisComplete}
               />
-            </TabsContent>
-            <TabsContent value="cooccurrence">
-              <AnalysisResults analysisId={analysisId} type="cooccurrence" />
-            </TabsContent>
-            <TabsContent value="volume">
-              <AnalysisResults analysisId={analysisId} type="volume" />
-            </TabsContent>
-            <TabsContent value="competitors">
-              <AnalysisResults analysisId={analysisId} type="competitors" />
-            </TabsContent>
-          </Tabs>
+            </div>
+            <div className="md:col-span-1">
+              <WebSocketStatus analysisId={analysisId} />
+            </div>
+          </div>
+
+          <Card className="p-6 shadow-md">
+            <Tabs defaultValue="overview" className="w-full">
+              <TabsList className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground mb-4">
+                <TabsTrigger value="overview">概览</TabsTrigger>
+                <TabsTrigger value="cooccurrence">共现词</TabsTrigger>
+                <TabsTrigger value="volume">搜索量</TabsTrigger>
+                <TabsTrigger value="competitors">竞争词</TabsTrigger>
+              </TabsList>
+              <TabsContent value="overview">
+                <AnalysisResults 
+                  key={resultKey}
+                  analysisId={analysisId} 
+                  type="overview" 
+                />
+              </TabsContent>
+              <TabsContent value="cooccurrence">
+                <AnalysisResults analysisId={analysisId} type="cooccurrence" />
+              </TabsContent>
+              <TabsContent value="volume">
+                <AnalysisResults analysisId={analysisId} type="volume" />
+              </TabsContent>
+              <TabsContent value="competitors">
+                <AnalysisResults analysisId={analysisId} type="competitors" />
+              </TabsContent>
+            </Tabs>
+          </Card>
         </>
       )}
     </div>
