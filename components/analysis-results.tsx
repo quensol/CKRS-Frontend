@@ -78,37 +78,37 @@ export function AnalysisResults({ analysisId, type, key }: AnalysisResultsProps)
       case "overview":
         return (
           <TableRow>
-            <TableHead>种子关键词</TableHead>
-            <TableHead className="text-right">总搜索量</TableHead>
-            <TableHead className="text-right">种子搜索量</TableHead>
-            <TableHead className="text-right">搜索占比(%)</TableHead>
+            <TableHead className="whitespace-nowrap">种子关键词</TableHead>
+            <TableHead className="text-right whitespace-nowrap">总搜索量</TableHead>
+            <TableHead className="text-right whitespace-nowrap">种子搜索量</TableHead>
+            <TableHead className="text-right whitespace-nowrap">搜索占比(%)</TableHead>
           </TableRow>
         )
       case "cooccurrence":
         return (
           <TableRow>
-            <TableHead>共现关键词</TableHead>
-            <TableHead className="text-right">共现次数</TableHead>
+            <TableHead className="whitespace-nowrap">共现关键词</TableHead>
+            <TableHead className="text-right whitespace-nowrap">共现次数</TableHead>
           </TableRow>
         )
       case "volume":
         return (
           <TableRow>
-            <TableHead>中介关键词</TableHead>
-            <TableHead className="text-right">共现搜索量</TableHead>
-            <TableHead className="text-right">中介词总搜索量</TableHead>
-            <TableHead className="text-right">共比例(%)</TableHead>
-            <TableHead className="text-right">权重</TableHead>
+            <TableHead className="whitespace-nowrap">中介关键词</TableHead>
+            <TableHead className="text-right whitespace-nowrap">共现搜索量</TableHead>
+            <TableHead className="text-right whitespace-nowrap">中介词总搜索量</TableHead>
+            <TableHead className="text-right whitespace-nowrap">共现比例(%)</TableHead>
+            <TableHead className="text-right whitespace-nowrap">权重</TableHead>
           </TableRow>
         )
       case "competitors":
         return (
           <TableRow>
-            <TableHead>竞争关键词</TableHead>
-            <TableHead>关联中介词</TableHead>
-            <TableHead className="text-right">共现搜索量</TableHead>
-            <TableHead className="text-right">基础竞争度</TableHead>
-            <TableHead className="text-right">加权竞争度</TableHead>
+            <TableHead className="whitespace-nowrap">竞争关键词</TableHead>
+            <TableHead className="whitespace-nowrap">关联中介词</TableHead>
+            <TableHead className="text-right whitespace-nowrap">共现搜索量</TableHead>
+            <TableHead className="text-right whitespace-nowrap">基础竞争度</TableHead>
+            <TableHead className="text-right whitespace-nowrap">加权竞争度</TableHead>
           </TableRow>
         )
     }
