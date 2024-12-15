@@ -10,6 +10,7 @@ import { AnalysisProgress } from "./analysis-progress"
 import { AnalysisResults } from "./analysis-results"
 import { WebSocketStatus } from "./websocket-status"
 import { AnalysisBrief } from "@/types/analysis"
+import { AIAnalysis } from "./ai-analysis"
 
 interface KeywordAnalyzerProps {
   onAnalysisIdChange?: (id: number | null) => void
@@ -28,6 +29,7 @@ export function KeywordAnalyzer({
   const wsReadyRef = useRef(false)
   const analysisStatusRef = useRef<string>("pending")
   const completedRef = useRef(false)
+  const [activeView, setActiveView] = useState<"raw" | "ai">("raw")
 
   const updateAnalysisId = useCallback((id: number | null) => {
     setAnalysisId(id)
@@ -193,32 +195,57 @@ export function KeywordAnalyzer({
             </div>
           </div>
 
-          <Card className="p-6 shadow-md">
-            <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground mb-4">
-                <TabsTrigger value="overview">概览</TabsTrigger>
-                <TabsTrigger value="cooccurrence">共现词</TabsTrigger>
-                <TabsTrigger value="volume">搜索量</TabsTrigger>
-                <TabsTrigger value="competitors">竞争词</TabsTrigger>
-              </TabsList>
-              <TabsContent value="overview">
-                <AnalysisResults 
-                  key={resultKey}
-                  analysisId={analysisId} 
-                  type="overview" 
-                />
-              </TabsContent>
-              <TabsContent value="cooccurrence">
-                <AnalysisResults analysisId={analysisId} type="cooccurrence" />
-              </TabsContent>
-              <TabsContent value="volume">
-                <AnalysisResults analysisId={analysisId} type="volume" />
-              </TabsContent>
-              <TabsContent value="competitors">
-                <AnalysisResults analysisId={analysisId} type="competitors" />
-              </TabsContent>
-            </Tabs>
-          </Card>
+          <div className="flex gap-4 mb-4">
+            <Button
+              variant={activeView === "raw" ? "default" : "outline"}
+              onClick={() => setActiveView("raw")}
+              className="flex-1"
+            >
+              原始数据
+            </Button>
+            <Button
+              variant={activeView === "ai" ? "default" : "outline"}
+              onClick={() => setActiveView("ai")}
+              className="flex-1"
+            >
+              大模型分析
+            </Button>
+          </div>
+
+          {activeView === "raw" ? (
+            <Card className="p-6 shadow-md">
+              <Tabs defaultValue="overview" className="w-full">
+                <TabsList className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground mb-4">
+                  <TabsTrigger value="overview">概览</TabsTrigger>
+                  <TabsTrigger value="cooccurrence">共现词</TabsTrigger>
+                  <TabsTrigger value="volume">搜索量</TabsTrigger>
+                  <TabsTrigger value="competitors">竞争词</TabsTrigger>
+                  <TabsTrigger value="user-profiles">用户画像</TabsTrigger>
+                </TabsList>
+                <TabsContent value="overview">
+                  <AnalysisResults 
+                    key={resultKey}
+                    analysisId={analysisId} 
+                    type="overview" 
+                  />
+                </TabsContent>
+                <TabsContent value="cooccurrence">
+                  <AnalysisResults analysisId={analysisId} type="cooccurrence" />
+                </TabsContent>
+                <TabsContent value="volume">
+                  <AnalysisResults analysisId={analysisId} type="volume" />
+                </TabsContent>
+                <TabsContent value="competitors">
+                  <AnalysisResults analysisId={analysisId} type="competitors" />
+                </TabsContent>
+                <TabsContent value="user-profiles">
+                  <AnalysisResults analysisId={analysisId} type="user-profiles" />
+                </TabsContent>
+              </Tabs>
+            </Card>
+          ) : (
+            <AIAnalysis analysisId={analysisId} />
+          )}
         </>
       )}
     </div>

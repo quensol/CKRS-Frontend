@@ -16,16 +16,18 @@ import {
   AnalysisDetail,
   Cooccurrence, 
   SearchVolume, 
-  Competitor 
+  Competitor,
+  UserProfile
 } from "@/types/analysis"
 import { OverviewChart } from './charts/overview-chart'
 import { CooccurrenceChart } from './charts/cooccurrence-chart'
 import { VolumeChart } from './charts/volume-chart'
 import { CompetitorChart } from './charts/competitor-chart'
+import { UserProfilesChart } from './charts/user-profiles-chart'
 
 interface AnalysisResultsProps {
   analysisId: number
-  type: "overview" | "cooccurrence" | "volume" | "competitors"
+  type: "overview" | "cooccurrence" | "volume" | "competitors" | "user-profiles"
   key?: number
 }
 
@@ -36,7 +38,7 @@ export function AnalysisResults({ analysisId, type, key }: AnalysisResultsProps)
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log(`开始获取${type}数据, analysisId=${analysisId}${key ? `, key=${key}` : ''}`)
+        console.log(`��始获取${type}数据, analysisId=${analysisId}${key ? `, key=${key}` : ''}`)
         let endpoint = `http://localhost:8000/api/v1/keyword/`
         switch (type) {
           case "overview":
@@ -50,6 +52,9 @@ export function AnalysisResults({ analysisId, type, key }: AnalysisResultsProps)
             break
           case "competitors":
             endpoint += `competitors/${analysisId}`
+            break
+          case "user-profiles":
+            endpoint += `analysis/${analysisId}/user-profiles/distribution`
             break
         }
 
@@ -166,6 +171,11 @@ export function AnalysisResults({ analysisId, type, key }: AnalysisResultsProps)
         return (
           <div>
             <OverviewChart data={overviewData} />
+            {overviewData.user_profiles && overviewData.user_profiles.length > 0 && (
+              <div className="mt-8">
+                <UserProfilesChart data={overviewData.user_profiles} />
+              </div>
+            )}
             <Table>
               <TableHeader>
                 {renderTableHeader()}
@@ -216,6 +226,16 @@ export function AnalysisResults({ analysisId, type, key }: AnalysisResultsProps)
                 {renderTableBody()}
               </TableBody>
             </Table>
+          </div>
+        )
+      case "user-profiles":
+        const profileData = data as UserProfile[]
+        return (
+          <div>
+            <UserProfilesChart 
+              data={profileData} 
+              analysisId={analysisId} 
+            />
           </div>
         )
     }

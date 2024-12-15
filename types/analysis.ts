@@ -10,7 +10,10 @@ export interface AnalysisBrief {
 }
 
 export interface AnalysisDetail extends AnalysisBrief {
-  // 如果有额外字段可以在这里添加
+  user_profiles: UserProfile[]
+  cooccurrence_keywords: Cooccurrence[]
+  search_volumes: SearchVolume[]
+  competitors: Competitor[]
 }
 
 export interface Cooccurrence {
@@ -38,11 +41,29 @@ export interface Competitor {
   weighted_competition_score: number
 }
 
+export interface UserProfile {
+  profile_type: "age" | "gender" | "education"
+  category_value: number
+  user_count: number
+  percentage: number
+  created_at: string
+}
+
+export interface UserProfileStats {
+  total_users: number
+  avg_age: number
+  male_ratio: number
+  female_ratio: number
+  avg_education: number
+  created_at: string
+}
+
 export type AnalysisData = 
   | AnalysisDetail
   | Cooccurrence[] 
   | SearchVolume[] 
   | Competitor[]
+  | UserProfile[]
 
 export interface AnalysisResultsProps {
   analysisId: number
