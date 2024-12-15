@@ -1,65 +1,36 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card } from "@/components/ui/card"
+import { motion } from "framer-motion"
+import { cn } from "@/lib/utils"
 
 interface WebSocketStatus {
   connected: boolean
-  lastMessage: string
-  lastHeartbeat: string
-  reconnectAttempts: number
   error?: string
 }
 
 export function WebSocketStatus({ analysisId }: { analysisId: number | null }) {
   const [status, setStatus] = useState<WebSocketStatus>({
-    connected: false,
-    lastMessage: "无",
-    lastHeartbeat: "无",
-    reconnectAttempts: 0
+    connected: false
   })
 
-  // 监听全局WebSocket事件
   useEffect(() => {
     const handleWebSocketEvent = (event: CustomEvent) => {
       const { type, data } = event.detail
       
       switch (type) {
         case "connect":
-          setStatus(prev => ({ ...prev, connected: true, error: undefined }))
+          setStatus({ connected: true })
           break
         case "disconnect":
-          setStatus(prev => ({ ...prev, connected: false }))
-          break
-        case "message":
-          setStatus(prev => ({ 
-            ...prev, 
-            lastMessage: new Date().toLocaleTimeString() 
-          }))
-          break
-        case "heartbeat":
-          setStatus(prev => ({ 
-            ...prev, 
-            lastHeartbeat: new Date().toLocaleTimeString() 
-          }))
+          setStatus({ connected: false })
           break
         case "error":
-          setStatus(prev => ({ 
-            ...prev, 
-            error: data.message,
-            connected: false 
-          }))
-          break
-        case "reconnect":
-          setStatus(prev => ({ 
-            ...prev, 
-            reconnectAttempts: data.attempts 
-          }))
+          setStatus({ connected: false, error: data.message })
           break
       }
     }
 
-    // 添加事件监听
     window.addEventListener('websocket-status', handleWebSocketEvent as EventListener)
 
     return () => {
@@ -68,22 +39,25 @@ export function WebSocketStatus({ analysisId }: { analysisId: number | null }) {
   }, [])
 
   return (
-    <Card className="p-4 text-sm">
-      <h3 className="font-medium mb-2">WebSocket状态</h3>
-      <div className="space-y-1">
-        <p>分析ID: {analysisId || '无'}</p>
-        <p>连接状态: 
-          <span className={status.connected ? "text-green-500" : "text-red-500"}>
-            {status.connected ? " 已连接" : " 未连接"}
-          </span>
-        </p>
-        <p>最后消息: {status.lastMessage}</p>
-        <p>最后心跳: {status.lastHeartbeat}</p>
-        <p>重连次数: {status.reconnectAttempts}</p>
-        {status.error && (
-          <p className="text-red-500">错误: {status.error}</p>
+    <div className="flex items-center gap-2">
+      <motion.div
+        className={cn(
+          "w-3 h-3 rounded-full",
+          status.connected ? "bg-green-500" : "bg-red-500"
         )}
-      </div>
-    </Card>
+        animate={{
+          opacity: status.connected ? [1, 0.5, 1] : 1,
+          scale: status.connected ? [1, 0.9, 1] : 1
+        }}
+        transition={{
+          duration: 2,
+          repeat: status.connected ? Infinity : 0,
+          ease: "easeInOut"
+        }}
+      />
+      <span className="text-sm text-gray-500">
+        {status.error || (status.connected ? "已连接" : "未连接")}
+      </span>
+    </div>
   )
 } 

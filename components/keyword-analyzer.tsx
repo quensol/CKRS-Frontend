@@ -11,6 +11,7 @@ import { AnalysisResults } from "./analysis-results"
 import { WebSocketStatus } from "./websocket-status"
 import { AnalysisBrief } from "@/types/analysis"
 import { AIAnalysis } from "./ai-analysis"
+import { motion, AnimatePresence } from "framer-motion"
 
 interface KeywordAnalyzerProps {
   onAnalysisIdChange?: (id: number | null) => void
@@ -30,6 +31,7 @@ export function KeywordAnalyzer({
   const analysisStatusRef = useRef<string>("pending")
   const completedRef = useRef(false)
   const [activeView, setActiveView] = useState<"raw" | "ai">("raw")
+  const [hasStarted, setHasStarted] = useState(false)
 
   const updateAnalysisId = useCallback((id: number | null) => {
     setAnalysisId(id)
@@ -39,6 +41,7 @@ export function KeywordAnalyzer({
   useEffect(() => {
     if (selectedAnalysisId && selectedAnalysisId !== analysisId) {
       updateAnalysisId(selectedAnalysisId)
+      setHasStarted(true)
     }
   }, [selectedAnalysisId, analysisId, updateAnalysisId])
 
@@ -72,7 +75,6 @@ export function KeywordAnalyzer({
   }
 
   const startNewAnalysis = async () => {
-    completedRef.current = false
     if (!keyword.trim()) {
       toast({
         title: "请输入关键词",
@@ -81,6 +83,7 @@ export function KeywordAnalyzer({
       return
     }
 
+    setHasStarted(true)
     setIsAnalyzing(true)
     wsReadyRef.current = false
     
@@ -153,101 +156,178 @@ export function KeywordAnalyzer({
 
   return (
     <div className="space-y-8">
-      <Card className="p-6 shadow-md hover:shadow-lg transition-shadow">
-        <div className="flex flex-col gap-4">
-          <h2 className="text-xl font-semibold">关键词分析</h2>
-          <div className="flex gap-4">
-            <Input
-              placeholder="请输入要分析的关键词"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              disabled={isAnalyzing}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !isAnalyzing) {
-                  startNewAnalysis()
-                }
-              }}
-              className="flex-1"
-            />
-            <Button 
-              onClick={startNewAnalysis} 
-              disabled={isAnalyzing}
-              className="min-w-[100px]"
+      <AnimatePresence mode="wait">
+        {!hasStarted ? (
+          <motion.div 
+            className="min-h-[80vh] flex flex-col items-center justify-center"
+            exit={{ 
+              y: -300, 
+              opacity: 0,
+              transition: {
+                type: "spring",
+                stiffness: 200,
+                damping: 15,
+                mass: 0.8
+              }
+            }}
+          >
+            <motion.div 
+              className="text-center mb-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
             >
-              {isAnalyzing ? "分析中..." : "开始分析"}
-            </Button>
-          </div>
-        </div>
-      </Card>
-
-      {analysisId && (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="md:col-span-2">
-              <AnalysisProgress 
-                analysisId={analysisId} 
-                onWsReady={() => handleWsReady(analysisId)}
-                onComplete={handleAnalysisComplete}
-              />
-            </div>
-            <div className="md:col-span-1">
-              <WebSocketStatus analysisId={analysisId} />
-            </div>
-          </div>
-
-          <div className="flex gap-4 mb-4">
-            <Button
-              variant={activeView === "raw" ? "default" : "outline"}
-              onClick={() => setActiveView("raw")}
-              className="flex-1"
+              <h1 className="text-4xl font-bold mb-4">关键词分析工具</h1>
+              <p className="text-xl text-gray-600">
+                洞察市场，驱动未来
+              </p>
+            </motion.div>
+            <motion.div 
+              className="w-full max-w-2xl"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
             >
-              原始数据
-            </Button>
-            <Button
-              variant={activeView === "ai" ? "default" : "outline"}
-              onClick={() => setActiveView("ai")}
-              className="flex-1"
-            >
-              大模型分析
-            </Button>
-          </div>
-
-          {activeView === "raw" ? (
-            <Card className="p-6 shadow-md">
-              <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground mb-4">
-                  <TabsTrigger value="overview">概览</TabsTrigger>
-                  <TabsTrigger value="cooccurrence">共现词</TabsTrigger>
-                  <TabsTrigger value="volume">搜索量</TabsTrigger>
-                  <TabsTrigger value="competitors">竞争词</TabsTrigger>
-                  <TabsTrigger value="user-profiles">用户画像</TabsTrigger>
-                </TabsList>
-                <TabsContent value="overview">
-                  <AnalysisResults 
-                    key={resultKey}
-                    analysisId={analysisId} 
-                    type="overview" 
+              <Card className="p-6">
+                <div className="flex gap-4">
+                  <Input
+                    placeholder="请输入要分析的关键词"
+                    value={keyword}
+                    onChange={(e) => setKeyword(e.target.value)}
+                    disabled={isAnalyzing}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !isAnalyzing) {
+                        startNewAnalysis()
+                      }
+                    }}
+                    className="flex-1"
                   />
-                </TabsContent>
-                <TabsContent value="cooccurrence">
-                  <AnalysisResults analysisId={analysisId} type="cooccurrence" />
-                </TabsContent>
-                <TabsContent value="volume">
-                  <AnalysisResults analysisId={analysisId} type="volume" />
-                </TabsContent>
-                <TabsContent value="competitors">
-                  <AnalysisResults analysisId={analysisId} type="competitors" />
-                </TabsContent>
-                <TabsContent value="user-profiles">
-                  <AnalysisResults analysisId={analysisId} type="user-profiles" />
-                </TabsContent>
-              </Tabs>
+                  <Button 
+                    onClick={startNewAnalysis} 
+                    disabled={isAnalyzing}
+                    className="min-w-[100px]"
+                  >
+                    {isAnalyzing ? "分析中..." : "开始分析"}
+                  </Button>
+                </div>
+              </Card>
+            </motion.div>
+          </motion.div>
+        ) : (
+          <motion.div
+            className="space-y-8"  // 加垂直间距
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ 
+              type: "spring",
+              stiffness: 200,
+              damping: 20,
+              mass: 0.8,
+              delay: 0.2
+            }}
+          >
+            <Card className="p-6 shadow-md hover:shadow-lg transition-shadow">
+              <div className="flex flex-col gap-4">
+                <h2 className="text-xl font-semibold">关键词分析</h2>
+                <div className="flex gap-4">
+                  <Input
+                    placeholder="请输入要分析的关键词"
+                    value={keyword}
+                    onChange={(e) => setKeyword(e.target.value)}
+                    disabled={isAnalyzing}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !isAnalyzing) {
+                        startNewAnalysis()
+                      }
+                    }}
+                    className="flex-1"
+                  />
+                  <Button 
+                    onClick={startNewAnalysis} 
+                    disabled={isAnalyzing}
+                    className="min-w-[100px]"
+                  >
+                    {isAnalyzing ? "分析中..." : "开始分析"}
+                  </Button>
+                </div>
+              </div>
             </Card>
-          ) : (
-            <AIAnalysis analysisId={analysisId} />
-          )}
-        </>
-      )}
+
+            {analysisId && (
+              <motion.div
+                className="space-y-8"  // 添加垂直间距
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+              >
+                <div className="grid grid-cols-1 gap-8">
+                  <div className="flex items-center gap-8">
+                    <div className="flex-1">
+                      <AnalysisProgress 
+                        analysisId={analysisId} 
+                        onWsReady={() => handleWsReady(analysisId)}
+                        onComplete={handleAnalysisComplete}
+                      />
+                    </div>
+                    <WebSocketStatus analysisId={analysisId} />
+                  </div>
+                  <div className="flex gap-4 mb-4">
+                    <Button
+                      variant={activeView === "raw" ? "default" : "outline"}
+                      onClick={() => setActiveView("raw")}
+                      className="flex-1"
+                    >
+                      原始数据
+                    </Button>
+                    <Button
+                      variant={activeView === "ai" ? "default" : "outline"}
+                      onClick={() => setActiveView("ai")}
+                      className="flex-1"
+                    >
+                      大模型分析
+                    </Button>
+                  </div>
+
+                  {activeView === "raw" ? (
+                    <Card className="p-6 shadow-md">
+                      <Tabs defaultValue="overview" className="w-full">
+                        <TabsList className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground mb-4">
+                          <TabsTrigger value="overview">概览</TabsTrigger>
+                          <TabsTrigger value="cooccurrence">共现词</TabsTrigger>
+                          <TabsTrigger value="volume">搜索量</TabsTrigger>
+                          <TabsTrigger value="competitors">竞争词</TabsTrigger>
+                          <TabsTrigger value="user-profiles">用户画像</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="overview">
+                          <AnalysisResults 
+                            key={resultKey}
+                            analysisId={analysisId} 
+                            type="overview" 
+                          />
+                        </TabsContent>
+                        <TabsContent value="cooccurrence">
+                          <AnalysisResults analysisId={analysisId} type="cooccurrence" />
+                        </TabsContent>
+                        <TabsContent value="volume">
+                          <AnalysisResults analysisId={analysisId} type="volume" />
+                        </TabsContent>
+                        <TabsContent value="competitors">
+                          <AnalysisResults analysisId={analysisId} type="competitors" />
+                        </TabsContent>
+                        <TabsContent value="user-profiles">
+                          <AnalysisResults analysisId={analysisId} type="user-profiles" />
+                        </TabsContent>
+                      </Tabs>
+                    </Card>
+                  ) : (
+                    <AIAnalysis analysisId={analysisId} />
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 } 

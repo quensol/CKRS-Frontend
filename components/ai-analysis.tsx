@@ -149,6 +149,22 @@ export function AIAnalysis({ analysisId }: AIAnalysisProps) {
     }
   }
 
+  // 处理列表项
+  const processListItem = (line: string) => {
+    // 计算缩进级别
+    const indentLevel = line.match(/^\s*/)?.[0].length || 0
+    const content = line.trim()
+    
+    if (content.startsWith('- ')) {
+      return {
+        type: 'list-item',
+        content: content.slice(2),
+        indent: indentLevel
+      }
+    }
+    return null
+  }
+
   return (
     <Card className="p-6">
       {!isLoading && !status?.insight ? (
@@ -171,79 +187,85 @@ export function AIAnalysis({ analysisId }: AIAnalysisProps) {
           prose-p:text-gray-600 prose-p:my-1
           prose-li:text-gray-600 
           prose-strong:text-gray-800
-          prose-code:bg-gray-100 prose-code:px-1 prose-code:rounded
-          prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline
-          prose-blockquote:border-l-4 prose-blockquote:border-gray-300 prose-blockquote:pl-4 prose-blockquote:italic
-          prose-pre:bg-gray-100 prose-pre:p-4 prose-pre:rounded"
+          prose-ul:my-2 prose-ul:list-disc prose-ul:pl-6
+          prose-li:my-0.5"
         >
           <div className="whitespace-pre-wrap">
             {(() => {
               const lines = status.insight?.replace(/\\n/g, '\n').split('\n') || []
               const elements = []
+              let currentList: JSX.Element[] = []
+              let isInList = false
               
               for (let i = 0; i < lines.length; i++) {
                 const line = lines[i]
+                const listItem = processListItem(line)
                 
-                // 处理代码块
-                if (isCodeBlock(line)) {
-                  const { code, endIndex } = processCodeBlock(lines, i)
-                  elements.push(
-                    <pre key={i}>
-                      <code>{code}</code>
-                    </pre>
-                  )
-                  i = endIndex
-                  continue
-                }
-                
-                // 处理标题
-                if (line.startsWith('# ')) {
-                  elements.push(<h1 key={i}>{line.slice(2)}</h1>)
-                }
-                else if (line.startsWith('## ')) {
-                  elements.push(<h2 key={i}>{line.slice(3)}</h2>)
-                }
-                else if (line.startsWith('### ')) {
-                  elements.push(<h3 key={i}>{line.slice(4)}</h3>)
-                }
-                else if (line.startsWith('#### ')) {
-                  elements.push(<h4 key={i}>{line.slice(5)}</h4>)
-                }
-                // 处理引用
-                else if (line.startsWith('> ')) {
-                  elements.push(
-                    <blockquote key={i} 
+                if (listItem) {
+                  if (!isInList) {
+                    isInList = true
+                    currentList = []
+                  }
+                  currentList.push(
+                    <li 
+                      key={i}
+                      className={`ml-${listItem.indent * 4}`}
                       dangerouslySetInnerHTML={{ 
-                        __html: processMarkdown(line.slice(2)) 
-                      }} 
+                        __html: processMarkdown(listItem.content) 
+                      }}
                     />
                   )
+                } else {
+                  if (isInList) {
+                    elements.push(<ul key={`list-${i}`}>{currentList}</ul>)
+                    isInList = false
+                    currentList = []
+                  }
+                  
+                  // 处理其他类型的内容
+                  if (line.startsWith('# ')) {
+                    elements.push(<h1 key={i}>{line.slice(2)}</h1>)
+                  }
+                  // 处理标题
+                  else if (line.startsWith('## ')) {
+                    elements.push(<h2 key={i}>{line.slice(3)}</h2>)
+                  }
+                  else if (line.startsWith('### ')) {
+                    elements.push(<h3 key={i}>{line.slice(4)}</h3>)
+                  }
+                  else if (line.startsWith('#### ')) {
+                    elements.push(<h4 key={i}>{line.slice(5)}</h4>)
+                  }
+                  // 处理引用
+                  else if (line.startsWith('> ')) {
+                    elements.push(
+                      <blockquote key={i} 
+                        dangerouslySetInnerHTML={{ 
+                          __html: processMarkdown(line.slice(2)) 
+                        }} 
+                      />
+                    )
+                  }
+                  // 处理空行
+                  else if (line.trim() === '') {
+                    elements.push(<br key={i} />)
+                  }
+                  // 处理普通段落
+                  else {
+                    elements.push(
+                      <p key={i} 
+                        dangerouslySetInnerHTML={{ 
+                          __html: processMarkdown(line) 
+                        }} 
+                      />
+                    )
+                  }
                 }
-                // 处理列表项
-                else if (line.startsWith('- ')) {
-                  elements.push(
-                    <li key={i} 
-                      className="my-1"
-                      dangerouslySetInnerHTML={{ 
-                        __html: processMarkdown(line.slice(2)) 
-                      }} 
-                    />
-                  )
-                }
-                // 处理空行
-                else if (line.trim() === '') {
-                  elements.push(<br key={i} />)
-                }
-                // 处理普通段落
-                else {
-                  elements.push(
-                    <p key={i} 
-                      dangerouslySetInnerHTML={{ 
-                        __html: processMarkdown(line) 
-                      }} 
-                    />
-                  )
-                }
+              }
+              
+              // 处理最后一个列表（如果有）
+              if (isInList) {
+                elements.push(<ul key="list-final">{currentList}</ul>)
               }
               
               return elements
